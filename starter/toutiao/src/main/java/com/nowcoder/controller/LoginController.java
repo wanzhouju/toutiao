@@ -1,5 +1,9 @@
 package com.nowcoder.controller;
 
+
+import com.nowcoder.async.EventModel;
+import com.nowcoder.async.EventProducer;
+import com.nowcoder.async.EventType;
 import com.nowcoder.model.News;
 import com.nowcoder.model.ViewObject;
 import com.nowcoder.service.NewsService;
@@ -17,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 /**
  * Created by wuzhaojun on 2017/4/7.
  */
@@ -27,6 +30,9 @@ public class LoginController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    EventProducer eventProducer;
 
     @RequestMapping(path = {"/reg/"}, method = {RequestMethod.GET, RequestMethod.POST})
     @ResponseBody
@@ -58,16 +64,21 @@ public class LoginController {
     @ResponseBody
     public String login(Model model, @RequestParam("username") String username,
                         @RequestParam("password") String password,
-                        @RequestParam(value="rember", defaultValue = "0") int rememberme) {
+                        @RequestParam(value="rember", defaultValue = "0") int rememberme,
+                        HttpServletResponse response) {
         try {
-            Map<String, Object> map = userService.register(username, password);
+            Map<String, Object> map = userService.login(username, password);
             if (map.containsKey("ticket")) {
                 Cookie cookie = new Cookie("ticket", map.get("ticket").toString());
                 cookie.setPath("/");
                 if (rememberme > 0) {
                     cookie.setMaxAge(3600*24*5);
                 }
-                return ToutiaoUtil.getJSONString(0, "注册成功");
+                response.addCookie(cookie);
+                eventProducer.fireEvent(new
+                        EventModel(EventType.LOGIN).setActorId((int) map.get("userId"))
+                        .setExt("username", username).setExt("email", "631376401@qq.com"));
+                return ToutiaoUtil.getJSONString(0, "成功");
             } else {
                 return ToutiaoUtil.getJSONString(1, map);
             }

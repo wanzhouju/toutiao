@@ -1,10 +1,7 @@
 package com.nowcoder.controller;
 
 import com.nowcoder.model.*;
-import com.nowcoder.service.CommentService;
-import com.nowcoder.service.NewsService;
-import com.nowcoder.service.QiniuService;
-import com.nowcoder.service.UserService;
+import com.nowcoder.service.*;
 import com.nowcoder.util.ToutiaoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,11 +46,20 @@ public class NewsController {
     @Autowired
     UserService userService;
 
+    @Autowired
+    LikeService likeService;
+
     @RequestMapping(path = {"/news/{newsId}"}, method = {RequestMethod.GET})
     public String newsDetail(@PathVariable("newsId") int newsId, Model model) {
         try {
             News news = newsService.getById(newsId);
             if (news != null) {
+                int localUserId = hostHolder.getUser() != null ? hostHolder.getUser().getId() : 0;
+                if(localUserId!= 0){
+                    model.addAttribute("like",likeService.getLikeStatus(localUserId, EntityType.ENTITY_NEWS,news.getId()));
+                }else{
+                    model.addAttribute("like",0);
+                }
                 List<Comment> comments = commentService.getCommentsByEntity(news.getId(), EntityType.ENTITY_NEWS);
                 List<ViewObject> commentVOs = new ArrayList<ViewObject>();
                 for (Comment comment : comments) {
